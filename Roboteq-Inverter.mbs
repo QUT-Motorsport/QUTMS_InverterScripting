@@ -43,7 +43,8 @@ top:
 
 motorSpeed = getvalue(_BS, 1) 	' Measure current motor speed using Hall sensor
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
-'brakeCmd = getvalue(_VAR, 2)	' Breake command (user variable #2)
+brakeCmd = getvalue(_VAR, 2)	' Brake command (user variable #2)
+steeringCmd = getvalue(_VAR, 3) ' Steering command (user variable #3)
 
 'print("Motor speed=", motorSpeed,  "\r") 	' print motor speed for debugging
 
@@ -57,9 +58,19 @@ motorAmps2 = getvalue(_A,2)
 print("BattAmps1=", batteryAmps1, "\tBattAmps2=", batteryAmps2, "\r")
 print("MotorAmps1=", motorAmps1, "\tMotorAmps2=", motorAmps2, "\r")
 
+' Torque Vectoring
+' Steering command is positive steering angle for
+' correct side of motor mount
+throttleCmd = throttleCmd - (steeringCmd * 2)
+
 ' Limit command to 1000 max
 if (throttleCmd > 1000)
  throttleCmd = 1000
+end if
+
+' If Braking Limit Throttle
+if (brakeCmd > 50 Or throttleCmd < 0)
+ throttleCmd = 0
 end if
 
 commandDuty = throttleCmd
@@ -70,8 +81,6 @@ if (commandDuty < minDuty)
 elseif (commandDuty > maxDuty)
  commandDuty = maxDuty
 end if
-
-commandDuty = 50
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
 setcommand(_G, 2, commandDuty) ' Apply power to the motor
