@@ -15,6 +15,16 @@ dim commandDuty as integer 	' Calculated duty to command from motor
 dim maxDuty as integer 		' Max duty cycle allowable
 dim minDuty as integer 		' Min duty cycle allowable
 
+'dim maxAmpsPerMotor as integer 		' Max amps a single motor should be allowed.
+
+'dim lastDutyCycle as integer 	' the duty cycle of the previous loop
+
+dim batteryAmps1 as integer
+dim batteryAmps2 as integer
+
+dim motorAmps1 as integer
+dim motorAmps2 as integer
+
 ' Parameters
 maxRPM = 1750
 'busVoltage = 50
@@ -22,8 +32,11 @@ commandScale = 100
 maxDuty = 140
 minDuty = 20
 
-' Ensure the user variable is set to 0
-setconfig(_VAR, 1, 0)
+' Max amps per motor. 400 for entire car
+'maxAmpsPerChannel = 100
+
+' Last duty cycle
+'lastDutyCycle = 0
 
 
 top:
@@ -32,33 +45,24 @@ motorSpeed = getvalue(_BS, 1) 	' Measure current motor speed using Hall sensor
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
 'brakeCmd = getvalue(_VAR, 2)	' Breake command (user variable #2)
 
-print("Motor speed=", motorSpeed,  "\r") 	' print motor speed for debugging
+'print("Motor speed=", motorSpeed,  "\r") 	' print motor speed for debugging
 
-' Arbitrate between throttle and brake commands
-' Brake overrides throttle if greater than zero
-' Only positive commands are valid
-'if (brakeCmd > 0)
-' command = -brakeCmd
-'elseif (throttleCmd > 0)
-' command = throttleCmd
-'else
-' command = 0
-'end if
+' get value of battery aps
 
-command = throttleCmd
+batteryAmps1 = getvalue(_BA, 1)
+batteryAmps2 = getvalue(_BA, 2)
+motorAmps1 = getvalue(_A, 1)
+motorAmps2 = getvalue(_A,2)
+
+print("BattAmps1=", batteryAmps1, "\tBattAmps2=", batteryAmps2, "\r")
+print("MotorAmps1=", motorAmps1, "\tMotorAmps2=", motorAmps2, "\r")
 
 ' Limit command to 1000 max
-if (command > 1000)
- command = 1000
+if (throttleCmd > 1000)
+ throttleCmd = 1000
 end if
 
-' Compute duty needed to maintain current speed
-'neutralDuty = (motorSpeed * 1000) / maxRPM
-
-' Calculate command duty
-'commandDuty = neutralDuty + ((command * commandScale) / 1000)
-
-commandDuty = command
+commandDuty = throttleCmd
 
 ' Ensure duty cycle command is within tollerable allowances. Max and min
 if (commandDuty < minDuty)
@@ -66,6 +70,8 @@ if (commandDuty < minDuty)
 elseif (commandDuty > maxDuty)
  commandDuty = maxDuty
 end if
+
+commandDuty = 50
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
 setcommand(_G, 2, commandDuty) ' Apply power to the motor
