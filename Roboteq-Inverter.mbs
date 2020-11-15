@@ -25,12 +25,19 @@ dim batteryAmps2 as integer
 dim motorAmps1 as integer
 dim motorAmps2 as integer
 
+dim coastDutyCycle as integer
+
+dim startDrive as boolean
+
 ' Parameters
 maxRPM = 1750
 'busVoltage = 50
 commandScale = 100
 maxDuty = 140
 minDuty = 20
+
+SetCommand(_B,1,1) ' set start drive to 0
+SetCommand(_VAR,1,0)	' set throttle command to 0
 
 ' Max amps per motor. 400 for entire car
 'maxAmpsPerChannel = 100
@@ -41,11 +48,36 @@ minDuty = 20
 
 top:
 
+startDrive = getvalue(_B, 1) ' get start drive bool
+print("startDrive=",startDrive,"\r")
+
+if (startDrive = 0)
+ print("Don't start driving yet")
+ wait(1)
+ goto top
+end if
+
+
 motorSpeed = getvalue(_BS, 1) 	' Measure current motor speed using Hall sensor
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
+print("throttleVal=",throttleCmd,"\r")
+
+
+
 'brakeCmd = getvalue(_VAR, 2)	' Breake command (user variable #2)
 
 'print("Motor speed=", motorSpeed,  "\r") 	' print motor speed for debugging
+
+
+coastDutyCycle = 2177*motorSpeed - 5303	' Calculate the duty cycle that would result in 0 amps at current
+coastDutyCycle = coastDutyCycle/10000	' put back in correct value scale
+print("CoastDutyCalculated=",coastDutyCycle,"\r")
+
+if (throttleCmd < coastDutyCycle)
+ 'throttleCmd = coastDutyCycle
+end if
+
+
 
 ' get value of battery aps
 
@@ -71,7 +103,7 @@ elseif (commandDuty > maxDuty)
  commandDuty = maxDuty
 end if
 
-commandDuty = 50
+'commandDuty = 140
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
 setcommand(_G, 2, commandDuty) ' Apply power to the motor
