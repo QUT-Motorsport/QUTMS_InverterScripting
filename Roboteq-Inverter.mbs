@@ -15,41 +15,34 @@ dim commandDuty as integer 	' Calculated duty to command from motor
 dim maxDuty as integer 		' Max duty cycle allowable
 dim minDuty as integer 		' Min duty cycle allowable
 
-'dim maxAmpsPerMotor as integer 		' Max amps a single motor should be allowed.
-
-'dim lastDutyCycle as integer 	' the duty cycle of the previous loop
-
-dim batteryAmps1 as integer
-dim batteryAmps2 as integer
-
-dim motorAmps1 as integer
-dim motorAmps2 as integer
+dim maxAmpsPerMotor as integer 		' Max amps a single motor should be allowed.
 
 dim coastDutyCycle as integer
 
 dim startDrive as boolean
 
+dim brakeVal as integer
+
 ' Parameters
 maxRPM = 1750
 'busVoltage = 50
 commandScale = 100
-maxDuty = 250
-minDuty = 20
+maxDuty = 280
+minDuty = 30
+brakeVal = 0
 
 SetCommand(_B,1,0) ' set start drive to 0
 SetCommand(_VAR,1,0)	' set throttle command to 0
+SetCommand(_VAR, 2,0)	' set brake val to 0
 
 ' Max amps per motor. 400 for entire car
-'maxAmpsPerChannel = 100
-
-' Last duty cycle
-'lastDutyCycle = 0
+maxAmpsPerMotor = 50
 
 
 top:
 
 startDrive = getvalue(_B, 1) ' get start drive bool
-print("startDrive=",startDrive,"\r")
+'print("startDrive=",startDrive,"\r")
 
 if (startDrive = 0)
  print("Don't start driving yet")
@@ -60,7 +53,7 @@ end if
 
 motorSpeed = getvalue(_BS, 1) 	' Measure current motor speed using Hall sensor
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
-print("throttleVal=",throttleCmd,"\r")
+'print("throttleVal=",throttleCmd,"\r")
 
 
 
@@ -71,23 +64,20 @@ print("throttleVal=",throttleCmd,"\r")
 
 coastDutyCycle = 2177*motorSpeed - 5303	' Calculate the duty cycle that would result in 0 amps at current
 coastDutyCycle = coastDutyCycle/10000	' put back in correct value scale
-print("CoastDutyCalculated=",coastDutyCycle,"\r")
+'print("CoastDutyCalculated=",coastDutyCycle,"\r")
 
 if (throttleCmd < coastDutyCycle)
  throttleCmd = coastDutyCycle
 end if
 
+brakeVal = getvalue(_VAR, 2)	' get braking value
+' if braking, coast
+if (brakeVal > 20)
+ 'set command duty back to coast
+ throttleCmd = coastDutyCycle
+end if
 
 
-' get value of battery aps
-
-'batteryAmps1 = getvalue(_BA, 1)
-'batteryAmps2 = getvalue(_BA, 2)
-'motorAmps1 = getvalue(_A, 1)
-'motorAmps2 = getvalue(_A,2)
-
-print("BattAmps1=", batteryAmps1, "\tBattAmps2=", batteryAmps2, "\r")
-print("MotorAmps1=", motorAmps1, "\tMotorAmps2=", motorAmps2, "\r")
 
 ' Limit command to 1000 max
 if (throttleCmd > 1000)
@@ -103,13 +93,15 @@ elseif (commandDuty > maxDuty)
  commandDuty = maxDuty
 end if
 
+
+
 'commandDuty = 140
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
 setcommand(_G, 2, commandDuty) ' Apply power to the motor
 
 ' Optional log printed on the console for monitoring or debug
-print("T=", throttleCmd, "\tB=", brakeCmd, "\tS=", motorSpeed, "\tND=", neutralDuty, "\tCD=", commandDuty,"\r")
-
-wait(1) ' Wait 10ms
+'print("T=", throttleCmd, "\tB=", brakeCmd, "\tS=", motorSpeed, "\tND=", neutralDuty, "\tCD=", commandDuty,"\r")
+'print("=====================================================================\r")
+wait(10) ' Wait 10ms
 goto top ' Repeat loop forever 
