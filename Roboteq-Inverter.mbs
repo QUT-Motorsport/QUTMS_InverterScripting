@@ -33,10 +33,10 @@ dim startDrive as boolean
 maxRPM = 1750
 'busVoltage = 50
 commandScale = 100
-maxDuty = 140
+maxDuty = 250
 minDuty = 20
 
-SetCommand(_B,1,1) ' set start drive to 0
+SetCommand(_B,1,0) ' set start drive to 0
 SetCommand(_VAR,1,0)	' set throttle command to 0
 
 ' Max amps per motor. 400 for entire car
@@ -74,17 +74,17 @@ coastDutyCycle = coastDutyCycle/10000	' put back in correct value scale
 print("CoastDutyCalculated=",coastDutyCycle,"\r")
 
 if (throttleCmd < coastDutyCycle)
- 'throttleCmd = coastDutyCycle
+ throttleCmd = coastDutyCycle
 end if
 
 
 
 ' get value of battery aps
 
-batteryAmps1 = getvalue(_BA, 1)
-batteryAmps2 = getvalue(_BA, 2)
-motorAmps1 = getvalue(_A, 1)
-motorAmps2 = getvalue(_A,2)
+'batteryAmps1 = getvalue(_BA, 1)
+'batteryAmps2 = getvalue(_BA, 2)
+'motorAmps1 = getvalue(_A, 1)
+'motorAmps2 = getvalue(_A,2)
 
 print("BattAmps1=", batteryAmps1, "\tBattAmps2=", batteryAmps2, "\r")
 print("MotorAmps1=", motorAmps1, "\tMotorAmps2=", motorAmps2, "\r")
