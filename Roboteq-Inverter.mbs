@@ -15,7 +15,9 @@ dim commandDuty as integer 	' Calculated duty to command from motor
 dim maxDuty as integer 		' Max duty cycle allowable
 dim minDuty as integer 		' Min duty cycle allowable
 
-dim maxAmpsPerMotor as integer 		' Max amps a single motor should be allowed.
+dim maxAmps as integer 		' Max amps a single motor should be allowed.
+dim battAmps1 as integer
+dim battAmps2 as integer
 
 dim coastDutyCycle as integer
 
@@ -36,7 +38,7 @@ SetCommand(_VAR,1,0)	' set throttle command to 0
 SetCommand(_VAR, 2,0)	' set brake val to 0
 
 ' Max amps per motor. 400 for entire car
-maxAmpsPerMotor = 50
+maxAmps = 50
 
 
 top:
@@ -54,6 +56,19 @@ end if
 motorSpeed = getvalue(_BS, 1) 	' Measure current motor speed using Hall sensor
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
 'print("throttleVal=",throttleCmd,"\r")
+
+
+' current limit testing
+
+battAmps1 = getvalue(_BATAMPS,1)
+battAmps2 = getvalue(_BATAMPS,2)
+
+if (battAmps1 > maxAmps*10 Or battAmps2 > maxAmps*10)
+ print("ESTOP overcurrent limit=",maxAmps," BattAmps1=",battAmps1," BattAmps2=",battAmps2,"\r")
+ setcommand(_ESTOP,1)
+end if
+
+
 
 
 
@@ -98,7 +113,7 @@ end if
 'commandDuty = 140
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
-setcommand(_G, 2, commandDuty) ' Apply power to the motor
+'setcommand(_G, 2, commandDuty) ' Apply power to the motor
 
 ' Optional log printed on the console for monitoring or debug
 'print("T=", throttleCmd, "\tB=", brakeCmd, "\tS=", motorSpeed, "\tND=", neutralDuty, "\tCD=", commandDuty,"\r")
