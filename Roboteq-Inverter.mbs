@@ -29,7 +29,7 @@ dim brakeVal as integer
 maxRPM = 1750
 'busVoltage = 50
 commandScale = 100
-maxDuty = 280
+maxDuty = 150
 minDuty = 30
 brakeVal = 0
 
@@ -38,7 +38,7 @@ SetCommand(_VAR,1,0)	' set throttle command to 0
 SetCommand(_VAR, 2,0)	' set brake val to 0
 
 ' Max amps per motor. 400 for entire car
-maxAmps = 50
+maxAmps = 70
 
 
 top:
@@ -54,8 +54,11 @@ end if
 
 
 motorSpeed = getvalue(_BS, 1) 	' Measure current motor speed using Hall sensor
+motorSpeed = abs(motorSpeed)	' ensure motor speed is positive
+print(motorSpeed)
+
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
-'print("throttleVal=",throttleCmd,"\r")
+print("throttleVal=",throttleCmd,"\r")
 
 
 ' current limit testing
@@ -79,6 +82,7 @@ end if
 
 coastDutyCycle = 2177*motorSpeed - 5303	' Calculate the duty cycle that would result in 0 amps at current
 coastDutyCycle = coastDutyCycle/10000	' put back in correct value scale
+coastDutyCycle = abs(coastDutyCycle)	' ensure calculated value is positive
 'print("CoastDutyCalculated=",coastDutyCycle,"\r")
 
 if (throttleCmd < coastDutyCycle)
