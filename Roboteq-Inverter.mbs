@@ -27,9 +27,8 @@ dim brakeVal as integer
 
 ' Parameters
 maxRPM = 1750
-'busVoltage = 50
 commandScale = 100
-maxDuty = 150
+maxDuty = 300
 minDuty = 30
 brakeVal = 0
 
@@ -47,18 +46,16 @@ startDrive = getvalue(_B, 1) ' get start drive bool
 'print("startDrive=",startDrive,"\r")
 
 if (startDrive = 0)
- print("Don't start driving yet")
- wait(1)
+ print("startDrive=0 \r")
+ wait(10)
  goto top
 end if
 
 
-motorSpeed = getvalue(_BS, 1) 	' Measure current motor speed using Hall sensor
+motorSpeed = getvalue(_BS, 2) 	' Measure current motor speed using Hall sensor
 motorSpeed = abs(motorSpeed)	' ensure motor speed is positive
-print(motorSpeed)
 
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
-print("throttleVal=",throttleCmd,"\r")
 
 
 ' current limit testing
@@ -68,12 +65,8 @@ battAmps2 = getvalue(_BATAMPS,2)
 
 if (battAmps1 > maxAmps*10 Or battAmps2 > maxAmps*10)
  print("ESTOP overcurrent limit=",maxAmps," BattAmps1=",battAmps1," BattAmps2=",battAmps2,"\r")
- setcommand(_ESTOP,1)
+ 'setcommand(_ESTOP,1)
 end if
-
-
-
-
 
 'brakeCmd = getvalue(_VAR, 2)	' Breake command (user variable #2)
 
@@ -87,6 +80,7 @@ coastDutyCycle = abs(coastDutyCycle)	' ensure calculated value is positive
 
 if (throttleCmd < coastDutyCycle)
  throttleCmd = coastDutyCycle
+ print("coast=",throttleCmd,"\r")
 end if
 
 brakeVal = getvalue(_VAR, 2)	' get braking value
@@ -96,7 +90,7 @@ if (brakeVal > 20)
  throttleCmd = coastDutyCycle
 end if
 
-
+print(throttleCmd,"\r")
 
 ' Limit command to 1000 max
 if (throttleCmd > 1000)
@@ -115,6 +109,7 @@ end if
 
 
 'commandDuty = 140
+print("final command=",commandDuty,"\r")
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
 setcommand(_G, 2, commandDuty) ' Apply power to the motor
@@ -122,5 +117,6 @@ setcommand(_G, 2, commandDuty) ' Apply power to the motor
 ' Optional log printed on the console for monitoring or debug
 'print("T=", throttleCmd, "\tB=", brakeCmd, "\tS=", motorSpeed, "\tND=", neutralDuty, "\tCD=", commandDuty,"\r")
 'print("=====================================================================\r")
-wait(10) ' Wait 10ms
+'print("loop end")
+wait(1) ' Wait 10ms
 goto top ' Repeat loop forever 
