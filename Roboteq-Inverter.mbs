@@ -28,7 +28,7 @@ dim brakeVal as integer
 ' Parameters
 maxRPM = 1750
 commandScale = 100
-maxDuty = 300
+maxDuty = 400
 minDuty = 30
 brakeVal = 0
 
@@ -54,23 +54,8 @@ end if
 
 motorSpeed = getvalue(_BS, 2) 	' Measure current motor speed using Hall sensor
 motorSpeed = abs(motorSpeed)	' ensure motor speed is positive
-
+'print("Motor speed=",motorSpeed)
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
-
-
-' current limit testing
-
-battAmps1 = getvalue(_BATAMPS,1)
-battAmps2 = getvalue(_BATAMPS,2)
-
-if (battAmps1 > maxAmps*10 Or battAmps2 > maxAmps*10)
- print("ESTOP overcurrent limit=",maxAmps," BattAmps1=",battAmps1," BattAmps2=",battAmps2,"\r")
- 'setcommand(_ESTOP,1)
-end if
-
-'brakeCmd = getvalue(_VAR, 2)	' Breake command (user variable #2)
-
-'print("Motor speed=", motorSpeed,  "\r") 	' print motor speed for debugging
 
 
 coastDutyCycle = 2177*motorSpeed - 5303	' Calculate the duty cycle that would result in 0 amps at current
@@ -83,12 +68,17 @@ if (throttleCmd < coastDutyCycle)
  print("coast=",throttleCmd,"\r")
 end if
 
-brakeVal = getvalue(_VAR, 2)	' get braking value
+'print("Throttle command=",throttleCmd)
+
+'brakeVal = getvalue(_VAR, 2)	' get braking value
+'print(brakeVal)
 ' if braking, coast
-if (brakeVal > 20)
+'if (brakeVal > 20)
  'set command duty back to coast
- throttleCmd = coastDutyCycle
-end if
+ 'throttleCmd = coastDutyCycle
+'end if
+
+
 
 print(throttleCmd,"\r")
 
@@ -109,7 +99,7 @@ end if
 
 
 'commandDuty = 140
-print("final command=",commandDuty,"\r")
+'print("final command=",commandDuty,"\r")
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
 setcommand(_G, 2, commandDuty) ' Apply power to the motor
