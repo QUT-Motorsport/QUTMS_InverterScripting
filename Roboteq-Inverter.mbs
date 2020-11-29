@@ -33,7 +33,8 @@ dim maxDuty as integer 		' Max duty cycle allowable
 dim minDuty as integer 		' Min duty cycle allowable
 dim startDrive as boolean	' Start drive bool recieved from CC
 
-dim dutyCycleBand as integer ' max duty cycle can jump from current neutral duty
+dim dutyCycleMaxBand as integer ' max duty cycle can jump from current neutral duty
+dim dutyCycleMinBand as integer ' min duty cycle band, max regen value
 dim dutyCycleDiff as integer 
 
 
@@ -41,7 +42,9 @@ commandScale = 100
 maxDuty = 500
 minDuty = 30
 brakeVal = 0
-dutyCycleBand = 150
+dutyCycleMaxBand = 150
+dutyCycleMinBand = 20
+
 
 SetCommand(_B,1,0) ' set start drive to 0
 SetCommand(_VAR,1,0)	' set throttle command to 0
@@ -86,25 +89,17 @@ neutralDuty = neutralDuty/10000	' put back in correct value scale
 print("neutralDuty=",neutralDuty,"\r")
 
 ' if the throttle cmd is less than neutral duty, coast
-if (throttleCmd < neutralDuty)
- commandDuty = neutralDuty
- print("Coasting=",commandDuty,"\r")
-end if
+'if (throttleCmd < neutralDuty)
+'commandDuty = neutralDuty
+' print("Coasting=",commandDuty,"\r")
+'end if
 
-' if the throttle cmd is greater than the neutral duty, increase by band
-if (throttleCmd > neutralDuty)
- ' test if difference is greater than max duty
- dutyCycleDiff = throttleCmd - neutralDuty
- if (dutyCycleDiff > dutyCycleBand)
-  ' set to max value 
-  dutyCycleDiff = dutyCycleBand
- end if
+
+commandDuty = neutralDuty + (((dutyCycleMaxBand+dutyCycleMinBand)*throttleCmd)/1000)-dutyCycleMinBand
  
- ' add the duty cycle difference on to the current neutral duty cycle
- commandDuty = neutralDuty + dutyCycleDiff
  
- print("Accelerating: newCommandDuty=",commandDuty," dutyCycleDiff=",dutyCycleDiff,"\r")
-end if
+print("Accelerating: newCommandDuty=",commandDuty," accelAddition=",(((dutyCycleMaxBand+dutyCycleMinBand)*throttleCmd)/1000)-dutyCycleMinBand,"\r")
+
 
 
 
