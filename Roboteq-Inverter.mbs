@@ -1,36 +1,47 @@
 option explicit
 
-dim maxRPM as integer		' RPM at 100% duty at specified voltage
-'dim busVoltage as integer	' Maximum bus voltage
 dim commandScale as integer	' Scaling factor for command to duty mapping (0 to 1000)
 
 dim throttleCmd as integer 	' Throttle command
 dim brakeCmd as integer		' Brake command
 dim command as integer		' Arbitrated command
 dim motorSpeed as integer	' Measured motor speed
+dim prevMotorSpeed as integer	' motor speed on previous loop
 
-dim neutralDuty as integer 	' Calculated neutral duty for current speed
+
 dim commandDuty as integer 	' Calculated duty to command from motor
 
-dim maxDuty as integer 		' Max duty cycle allowable
-dim minDuty as integer 		' Min duty cycle allowable
+
 
 dim maxAmps as integer 		' Max amps a single motor should be allowed.
 dim battAmps1 as integer
 dim battAmps2 as integer
 
-dim coastDutyCycle as integer
-
-dim startDrive as boolean
-
 dim brakeVal as integer
 
-' Parameters
-maxRPM = 1750
+
+' input vars
+dim accelCmd as integer 		' Command from accelerator
+
+' calculated vars
+dim neutralDuty as integer		' CAlculated neutral duty for current RPM. 0 current
+
+' channel currents
+
+' Hard limits
+dim maxDuty as integer 		' Max duty cycle allowable
+dim minDuty as integer 		' Min duty cycle allowable
+dim startDrive as boolean	' Start drive bool recieved from CC
+
+dim dutyCycleBand as integer ' max duty cycle can jump from current neutral duty
+dim dutyCycleDiff as integer 
+
+
 commandScale = 100
 maxDuty = 400
 minDuty = 30
 brakeVal = 0
+dutyCycleBand = 25
 
 SetCommand(_B,1,0) ' set start drive to 0
 SetCommand(_VAR,1,0)	' set throttle command to 0
@@ -51,22 +62,50 @@ if (startDrive = 0)
  goto top
 end if
 
-
+print("get motor speed")
 motorSpeed = getvalue(_BS, 2) 	' Measure current motor speed using Hall sensor
 motorSpeed = abs(motorSpeed)	' ensure motor speed is positive
 'print("Motor speed=",motorSpeed)
+print("get accel command")
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
 
-
-coastDutyCycle = 2177*motorSpeed - 5303	' Calculate the duty cycle that would result in 0 amps at current
-coastDutyCycle = coastDutyCycle/10000	' put back in correct value scale
-coastDutyCycle = abs(coastDutyCycle)	' ensure calculated value is positive
-'print("CoastDutyCalculated=",coastDutyCycle,"\r")
-
-if (throttleCmd < coastDutyCycle)
- throttleCmd = coastDutyCycle
- print("coast=",throttleCmd,"\r")
+' clean motor speed bad values
+' if motor speed diff is greater than 1000
+if (abs(motorSpeed-prevMotorSpeed)>1000)
+ ' use previous loop motor speed
+ motorSpeed = prevMotorSpeed
 end if
+
+' set prev motor speed 
+prevMotorSpeed = motorSpeed
+
+
+neutralDuty = 2177*motorSpeed - 5303	' Calculate the duty cycle that would result in 0 amps at current
+neutralDuty = neutralDuty/10000	' put back in correct value scale
+print("neutralDuty=",neutralDuty,"\r")
+
+' if the throttle cmd is less than neutral duty, coast
+if (throttleCmd < neutralDuty)
+ commandDuty = neutralDuty
+ print("Coasting=",commandDuty,"\r")
+end if
+
+' if the throttle cmd is greater than the neutral duty, increase by band
+if (throttleCmd > neutralDuty)
+ ' test if difference is greater than max duty
+ dutyCycleDiff = throttleCmd - neutralDuty
+ if (dutyCycleDiff > dutyCycleBand)
+  ' set to max value 
+  dutyCycleDiff = dutyCycleBand
+ end if
+ 
+ ' add the duty cycle difference on to the current neutral duty cycle
+ commandDuty = neutralDuty + dutyCycleDiff
+ 
+ print("Accelerating: newCommandDuty=",commandDuty," dutyCycleDiff=",dutyCycleDiff,"\r")
+end if
+
+
 
 'print("Throttle command=",throttleCmd)
 
@@ -79,15 +118,10 @@ end if
 'end if
 
 
-
-print(throttleCmd,"\r")
-
 ' Limit command to 1000 max
-if (throttleCmd > 1000)
- throttleCmd = 1000
+if (commandDuty > 1000)
+ commandDuty = 1000
 end if
-
-commandDuty = throttleCmd
 
 ' Ensure duty cycle command is within tollerable allowances. Max and min
 if (commandDuty < minDuty)
@@ -99,7 +133,7 @@ end if
 
 
 'commandDuty = 140
-'print("final command=",commandDuty,"\r")
+print("final command=",commandDuty,"\r")
 
 setcommand(_G, 1, commandDuty) ' Apply power to the motor
 setcommand(_G, 2, commandDuty) ' Apply power to the motor
