@@ -38,10 +38,10 @@ dim dutyCycleDiff as integer
 
 
 commandScale = 100
-maxDuty = 400
+maxDuty = 500
 minDuty = 30
 brakeVal = 0
-dutyCycleBand = 25
+dutyCycleBand = 150
 
 SetCommand(_B,1,0) ' set start drive to 0
 SetCommand(_VAR,1,0)	' set throttle command to 0
@@ -62,16 +62,16 @@ if (startDrive = 0)
  goto top
 end if
 
-print("get motor speed")
+'print("get motor speed")
 motorSpeed = getvalue(_BS, 2) 	' Measure current motor speed using Hall sensor
 motorSpeed = abs(motorSpeed)	' ensure motor speed is positive
 'print("Motor speed=",motorSpeed)
-print("get accel command")
+'print("get accel command")
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
 
 ' clean motor speed bad values
 ' if motor speed diff is greater than 1000
-if (abs(motorSpeed-prevMotorSpeed)>1000)
+if (abs(motorSpeed-prevMotorSpeed)>3000)
  ' use previous loop motor speed
  motorSpeed = prevMotorSpeed
 end if
@@ -79,6 +79,7 @@ end if
 ' set prev motor speed 
 prevMotorSpeed = motorSpeed
 
+print("motorSpeed=",motorSpeed,"\r")
 
 neutralDuty = 2177*motorSpeed - 5303	' Calculate the duty cycle that would result in 0 amps at current
 neutralDuty = neutralDuty/10000	' put back in correct value scale
