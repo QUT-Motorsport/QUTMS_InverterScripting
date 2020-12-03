@@ -4,50 +4,35 @@ option explicit
 ' ======================
 
 dim debug as boolean
-debug = false
+debug = true
 
 ' User input
 dim throttleCmd as integer 	' Throttle command
 dim brakeCmd as integer		' Brake command
 
-' Sensed Values
+' Sensed values
 dim motorSpeed_1 as integer	' Measured motor speed
 dim motorSpeed_2 as integer	' Motor 2
 dim prevMotorSpeed_1 as integer	' Measured motor speed prev loop
 dim prevMotorSpeed_2 as integer	' Motor 2
 
 ' Calculated values
-dim neutralDuty_1 as integer
-dim neutralDuty_2 as integer
-
-dim command_1 as integer		' Command to apply to neutral duty
-dim command_2 as integer		' Motor 2
-
 dim commandDuty_1 as integer    ' Final command to motors
 dim commandDuty_2 as integer    ' Final command to motors
 
 ' Hard limits
-dim maxDuty as integer 		' Max duty cycle allowable
-dim minDuty as integer 		' Min duty cycle allowable
-dim startDrive as boolean	' Start drive bool recieved from CC
-dim minRegenRPM as integer	
-dim maxAccel as integer
-dim maxRegen as integer
+dim startDrive as boolean		' Start drive bool recieved from CC
+dim maxAccel as integer			' Max torque value. 1000 max 0 min
+dim maxRegen as integer			' Max regen value 1000 max 0 min
+dim brakeThreshold as integer 	' Threshold at which the brake will cut off. 0 min 1000 max. % * 10
 
-' Banding values
-dim dutyCycleMaxBand_1 as integer ' max duty cycle can jump from current neutral duty
-dim dutyCycleMaxBand_2 as integer ' max duty cycle can jump from current neutral duty
-dim dutyCycleMinBand_1 as integer ' min duty cycle band, max regen value
-dim dutyCycleMinBand_2 as integer ' min duty cycle band, max regen value
 
 ' Set variables
 ' ======================
-maxDuty = 1000
-minDuty = -100
-
 maxAccel = 1000     ' Duty cycle accel band
 maxRegen = 100       ' Duty cycle regen brake band
-minRegenRPM = 100   ' Min RPM for regen to be active
+
+brakeThreshold = 350	' decimal fraction * 1000
 
 prevMotorSpeed_1 = 0
 prevMotorSpeed_2 = 0
@@ -78,6 +63,7 @@ motorSpeed_1 = getvalue(_BS, 1)     ' get motor speed 1
 motorSpeed_2 = getvalue(_BS, 2)     ' get motor speed 2
 
 throttleCmd = getvalue(_VAR, 1)	' Throttle command (user variable #1)
+brakeCmd = getvalue(_VAR, 2)	' Brake command (user variable #2)
 
 ' Clean motor speed
 motorSpeed_1 = abs(motorSpeed_1)	' ensure positive
@@ -101,14 +87,24 @@ end if
 commandDuty_1 = (((maxAccel + maxRegen)*throttleCmd)/1000)-maxRegen
 commandDuty_2 = (((maxAccel + maxRegen)*throttleCmd)/1000)-maxRegen
 
+' if brake, regen brake
+if (brakeCmd > brakeThreshold)
+	commandDuty_1 = (-1 * maxRegen)
+	commandDuty_2 = (-1 * maxRegen)
+	if (debug)
+		print("brake active, no throttle\r")
+	end if
+end if
+
 ' No regen if rpm less than min rpm
-if (motorSpeed_1 < minRegenRPM And commandDuty_1 < 0)
+if (motorSpeed_1 < maxRegen And commandDuty_1 < 0)
  commandDuty_1 = 0
 end if
 
-if (motorSpeed_2 < minRegenRPM And commandDuty_2 < 0)
+if (motorSpeed_2 < maxRegen And commandDuty_2 < 0)
  commandDuty_2 = 0
 end if
+
 
 if (debug)
  print("calculatedCommandDuty_1=",commandDuty_1," calculatedCommandDuty_2=",commandDuty_2,"\r")
@@ -119,16 +115,16 @@ end if
 ' ==================
  
 ' Ensure duty cycle command is within tollerable allowances. Max andi min
-if (commandDuty_1 < minDuty)
+if (commandDuty_1 < (-1 * maxRegen))
  commandDuty_1 = 0
-elseif (commandDuty_1 > maxDuty)
- commandDuty_1 = maxDuty
+elseif (commandDuty_1 > maxAccel)
+ commandDuty_1 = maxAccel
 end if
 
-if (commandDuty_2 < minDuty)
+if (commandDuty_2 < (-1 * maxRegen))
  commandDuty_2 = 0
-elseif (commandDuty_2 > maxDuty)
- commandDuty_2 = maxDuty
+elseif (commandDuty_2 > maxAccel)
+ commandDuty_2 = maxAccel
 end if
 
 ' Limit command to 1000 max
