@@ -4,7 +4,7 @@ option explicit
 ' ======================
 
 dim debug as boolean
-debug = true
+debug = false
 
 ' User input
 dim throttleCmd as integer 	' Throttle command
@@ -24,6 +24,7 @@ dim commandDuty_2 as integer    ' Final command to motors
 dim startDrive as boolean		' Start drive bool recieved from CC
 dim maxAccel as integer			' Max torque value. 1000 max 0 min
 dim maxRegen as integer			' Max regen value 1000 max 0 min
+dim minRegenSpeed as integer	' Min regen speed
 dim brakeThreshold as integer 	' Threshold at which the brake will cut off. 0 min 1000 max. % * 10
 
 
@@ -31,6 +32,7 @@ dim brakeThreshold as integer 	' Threshold at which the brake will cut off. 0 mi
 ' ======================
 maxAccel = 1000     ' Duty cycle accel band
 maxRegen = 100       ' Duty cycle regen brake band
+minRegenSpeed = 590		' The minimum allowable RPM to use regen braking
 
 brakeThreshold = 350	' decimal fraction * 1000
 
@@ -97,11 +99,11 @@ if (brakeCmd > brakeThreshold)
 end if
 
 ' No regen if rpm less than min rpm
-if (motorSpeed_1 < maxRegen And commandDuty_1 < 0)
+if (motorSpeed_1 < minRegenSpeed And commandDuty_1 < 0)
  commandDuty_1 = 0
 end if
 
-if (motorSpeed_2 < maxRegen And commandDuty_2 < 0)
+if (motorSpeed_2 < minRegenSpeed And commandDuty_2 < 0)
  commandDuty_2 = 0
 end if
 
