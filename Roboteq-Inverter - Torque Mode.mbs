@@ -27,6 +27,9 @@ dim maxRegen as integer			' Max regen value 1000 max 0 min
 dim minRegenSpeed as integer	' Min regen speed
 dim brakeThreshold as integer 	' Threshold at which the brake will cut off. 0 min 1000 max. % * 10
 
+' Brake + Throttle disable
+dim accelDisable as boolean		' Disables all torque out of the motors
+
 
 ' Set variables
 ' ======================
@@ -35,6 +38,8 @@ maxRegen = 100       ' Duty cycle regen brake band
 minRegenSpeed = 590		' The minimum allowable RPM to use regen braking
 
 brakeThreshold = 350	' decimal fraction * 1000
+
+accelDisable = false 	' Set to false, should torque at start
 
 prevMotorSpeed_1 = 0
 prevMotorSpeed_2 = 0
@@ -108,9 +113,29 @@ if (motorSpeed_2 < minRegenSpeed And commandDuty_2 < 0)
 end if
 
 
+' If there is more than 25% throttle and there is brake value greater than threshold
+' TODO: Change this to 
+
+if (brakeCmd > brakeThreshold And throttleCmd > 250)
+	accelDisable = true
+end if
+
+' 0 torque if accel disabled
+if (accelDisable)
+	commandDuty_1 = 0
+	commandDuty_2 = 0
+end if
+
+' check if throttle val is back to 5% (50)
+if (throttleCmd <= 50)
+	accelDisable = false
+end if
+
 if (debug)
  print("calculatedCommandDuty_1=",commandDuty_1," calculatedCommandDuty_2=",commandDuty_2,"\r")
 end if
+
+
  
 
 ' Hard safety limits 
