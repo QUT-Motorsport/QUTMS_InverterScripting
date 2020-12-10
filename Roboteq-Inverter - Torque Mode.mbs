@@ -30,6 +30,9 @@ dim brakeThreshold as integer 	' Threshold at which the brake will cut off. 0 mi
 ' Brake + Throttle disable
 dim accelDisable as boolean		' Disables all torque out of the motors
 
+dim brakeCycleCount as integer	' Cycles of brake and throttle pushed
+dim brakeCycleLimit as integer	' Limit to enable accel disable
+
 
 ' Set variables
 ' ======================
@@ -40,6 +43,7 @@ minRegenSpeed = 590		' The minimum allowable RPM to use regen braking
 brakeThreshold = 350	' decimal fraction * 1000
 
 accelDisable = false 	' Set to false, should torque at start
+brakeCycleLimit = 500	' Approx 0.5 seconds or 500 cycles until accel disable
 
 prevMotorSpeed_1 = 0
 prevMotorSpeed_2 = 0
@@ -120,8 +124,13 @@ if (brakeCmd > brakeThreshold And throttleCmd > 250)
 	accelDisable = true
 end if
 
-' 0 torque if accel disabled
+' Count cycles whilst accel needs t be disabled
 if (accelDisable)
+ 	brakeCycleCount = brakeCycleCount + 1
+end if
+
+' 0 torque if accel disabled and more than elapsed cycles
+if (accelDisable And brakeCycleCount > brakeCycleLimit)
 	commandDuty_1 = 0
 	commandDuty_2 = 0
 end if
@@ -129,6 +138,7 @@ end if
 ' check if throttle val is back to 5% (50)
 if (throttleCmd <= 50)
 	accelDisable = false
+	brakeCycleCount = 0
 end if
 
 if (debug)
